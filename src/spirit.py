@@ -2,7 +2,7 @@ import png
 import src.mixer as mixer
 
 
-def generate(mask, key, mask_key, color_amount=3):
+def generate(mask, key, name, color_amount=3):
     img = []
     width = len(mask[0])
     height = len(mask)
@@ -15,7 +15,6 @@ def generate(mask, key, mask_key, color_amount=3):
             g, key = key % 256, mixer.get(key)
             b, key = key % 256, mixer.get(key)
             colors[i] = {"base": (r, g, b, 255), "current": (r, g, b, 255)}
-    print(colors)
 
     for y in range(height):
         row = ()
@@ -26,7 +25,7 @@ def generate(mask, key, mask_key, color_amount=3):
 
     img, width, height = _mirror_horizontally(img, width, height)
 
-    with open(f'./images/result-{hex(key%2048)}-{hex(mask_key%2048)}.png', 'wb') as f:
+    with open(f'./images/{name}.png', 'wb') as f:
         w = png.Writer(width, height, greyscale=False, alpha=True, bitdepth=8)
         w.write(f, img)
     return 0

@@ -6,13 +6,14 @@
 from src import spirit
 from src import mask
 
-
-spirit_key = 102
+size = 8
 mask_key = 112
+spirit_key = 102
+name = f"{size}_{mask_key}_{spirit_key}"
 
 print('Generating mask...')
-generated_mask, mask_key = mask.generate(mask_key, width=32//2, height=32)
+generated_mask, mask_key = mask.generate(mask_key, width=size//2, height=size)
 print('Generating spirit...')
-result_code = spirit.generate(generated_mask, spirit_key, mask_key)
+result_code = spirit.generate(generated_mask, spirit_key, name)
 if result_code == 0:
     print('Done!')
