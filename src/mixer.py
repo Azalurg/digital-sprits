@@ -1,16 +1,29 @@
-def get(key: int):
-    return (key * 353056231445948244643703619017) % 31976341530616062225701619174238451
+class Mixer:
+    _key = 8194907056147789
 
+    def random(self, salt=0):
+        self._key = (
+            self._key * 53854986464371996139 + 19882310927922663229 + salt
+        ) % 6543547642338880518018439
+        return self._key
 
-def hash_gen(mask, length=8):
-    alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    control_sum = 0
-    for y in range(len(mask)):
-        for x in range(len(mask[y])):
-            control_sum += mask[y][x]
+    def choice(self, data: list, salt=0):
+        data_range = len(data)
+        return data[self.random(salt) % data_range]
 
-    result = ''
-    for i in range(length):
-        result += alphabet[control_sum % len(alphabet)]
-        control_sum = get(control_sum)
-    return result
+    def hash64(self, mask):
+        alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        control = 1
+        for y in range(len(mask)):
+            small_sum = 0
+            for x in range(len(mask[y])):
+                small_sum += mask[y][x]
+
+            if small_sum > 0:
+                control *= small_sum
+
+        result = ""
+        for i in range(64):
+            result += alphabet[control % len(alphabet)]
+            control = self.random(salt=control)
+        return result

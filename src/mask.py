@@ -1,22 +1,46 @@
-import src.mixer as mixer
+from typing import List
+
+from src.mixer import Mixer
 
 
-def generate(key, width=8, height=16, transparency=False, color_amount=3):
-    numbers = [0, 1]
-    if transparency:
-        numbers.append(-1)
+class Mask:
+    def __init__(
+        self, width: int, height: int, colors: int, transparency=False, axes=1, salt=1
+    ):
+        self.mixer = Mixer()
+        self.mask = []
+        self.width = width
+        self.height = height
+        self.transparency = transparency
+        self.axes = axes
+        self.colors_list = [0, 1]
+        self.salt = salt
+        self.name = ""
 
-    for i in range(2, color_amount+2):
-        numbers.append(i)
+        if transparency:
+            self.colors_list.append(-1)
 
-    numbers_amount = len(numbers)
+        for i in range(2, colors + 2):
+            self.colors_list.append(i)
 
-    mask = []
-    for y in range(height):
-        row = []
-        for x in range(width):
-            n, key = numbers[key % numbers_amount], mixer.get(key)
-            row.append(n)
-        mask.append(row)
+        self.colors = len(self.colors_list)
 
-    return mask, key
+    def generate(self):
+        if self.axes == 0:
+            for x in range(self.height):
+                row = []
+                for y in range(self.width):
+                    row.append(self.mixer.choice(self.colors_list, self.salt))
+                self.mask.append(row)
+
+        if self.axes == 1:
+            for x in range(self.height):
+                row = []
+                self.width = (self.width // 2) * 2
+                for y in range(self.width // 2):
+                    number = self.mixer.choice(self.colors_list, self.salt)
+                    row.insert(y, number)
+                    row.insert(-1 - y, number)
+                self.mask.append(row)
+
+        self.name = self.mixer.hash64(self.mask)

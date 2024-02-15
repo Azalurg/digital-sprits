@@ -1,69 +1,57 @@
 import png
-import src.mixer as mixer
+from src.mask import Mask
+from src.mixer import Mixer
 
 
-def generate(mask, key, name, color_amount=3):
+class Spirit:
     img = []
-    width = len(mask[0])
-    height = len(mask)
-    use_colors = False
-    colors = {}
-    if color_amount > 0:
-        use_colors = True
-        for i in range(2, color_amount + 2):
-            r, key = key % 256, mixer.get(key)
-            g, key = key % 256, mixer.get(key)
-            b, key = key % 256, mixer.get(key)
-            colors[i] = {"base": (r, g, b, 255), "current": (r, g, b, 255)}
+    colors = {0: (0, 0, 0, 255), 1: (255, 255, 255, 255), -1: (0, 0, 0, 0)}
+    mixer = Mixer()
 
-    for y in range(height):
-        row = ()
-        for x in range(width):
-            color, key = _get_color(mask[y][x], key, use_colors, colors)
-            row += color
-        img.append(row)
+    def __init__(self, mask: Mask):
+        self.mask = mask
 
-    img, width, height = _mirror_horizontally(img, width, height)
+        self.generate()
+        self.save()
 
-    with open(f'./images/{name}.png', 'wb') as f:
-        w = png.Writer(width, height, greyscale=False, alpha=True, bitdepth=8)
-        w.write(f, img)
-    return 0
+    def generate(self):
+        for color in self.mask.colors_list:
+            if color in [-1, 0, 1]:
+                continue
+            r = self.mixer.random() % 256
+            g = self.mixer.random() % 256
+            b = self.mixer.random() % 256
+            self.colors.setdefault(color, (r, g, b, 255))
 
+        for y in range(self.mask.height):
+            row = ()
+            for x in range(self.mask.width):
+                color = self.colors.get(self.mask.mask[y][x], (255, 0, 255, 255))
+                row += color
+            self.img.append(row)
+            self._shift_colors()
 
-def _get_color(state, key, use_colors=False, colors=None):
-    color = ()
-    if state == -1:
-        color = (0, 0, 0, 0)
-    elif state == 0:
-        color = (0, 0, 0, 255)
-    elif state == 1:
-        color = (255, 255, 255, 255)
-    elif use_colors:
-        color = colors[state]["current"]
-        colors, key = _shift_colors(state, colors, key)
-    else:
-        r, key = key % 256, mixer.get(key)
-        g, key = key % 256, mixer.get(key)
-        b, key = key % 256, mixer.get(key)
-        color = (r, g, b, 255)
+    def save(self):
+        with open(f"./images/{self.mask.name}.png", "wb") as f:
+            w = png.Writer(
+                self.mask.width,
+                self.mask.height,
+                greyscale=False,
+                alpha=True,
+                bitdepth=8,
+            )
+            w.write(f, self.img)
+        return 0
 
-    return color, key
+    def _shift_colors(self):
+        for key, value in self.colors.items():
+            if key in [-1, 0, 1]:
+                continue
+            new_color = (
+                (value[0] + self.mixer.random() % 2) % 256,
+                (value[1] + self.mixer.random() % 2) % 256,
+                (value[2] + self.mixer.random() % 2) % 256,
+                255,
+            )
 
-
-def _mirror_horizontally(img, width, height):
-    new_img = []
-    for y in range(len(img)):
-        row = img[y]
-        for x in range(len(img[y]) - 1, 0, -4):
-            row = row + (img[y][x - 3], img[y][x - 2], img[y][x - 1], img[y][x])
-        new_img.append(row)
-    return new_img, width * 2, height
-
-
-def _shift_colors(color, colors, key):
-    r, key = (colors[color]["current"][0] + key % 2) % 256, mixer.get(key)
-    g, key = (colors[color]["current"][1] + key % 2) % 256, mixer.get(key)
-    b, key = (colors[color]["current"][2] + key % 2) % 256, mixer.get(key)
-    colors[color]["current"] = (r, g, b, 255)
-    return colors, key
+            self.colors[key] = new_color
